@@ -2,7 +2,7 @@ import express from "express";
 import healthRouter from "./routes/health.route";
 import apiRouter from "./routes";
 import { errorHandler, notFoundHandler } from "./middleware/error.middleware";
-import { docsRouter } from "./docs";
+import docsRouter from "./docs/router";
 
 const app = express();
 

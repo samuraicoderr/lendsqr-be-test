@@ -1,10 +1,33 @@
 import { OpenAPIRegistry, extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 import { z, ZodTypeAny } from "zod";
+import { userIdParamSchema } from "../validation/common.schema";
 import { errorResponseSchema } from "../validation/response.schema";
+import { createUserResponseSchema, createUserSchema } from "../validation/user.schema";
+import {
+  fundWalletSchema,
+  transferResponseSchema,
+  transferWalletSchema,
+  walletMutationResponseSchema,
+  walletResponseSchema,
+  withdrawWalletSchema
+} from "../validation/wallet.schema";
+import { transactionsResponseSchema } from "../validation/transaction.schema";
 
 extendZodWithOpenApi(z);
 
 export const registry = new OpenAPIRegistry();
+
+registry.register("ErrorResponse", errorResponseSchema);
+registry.register("UserIdParam", userIdParamSchema);
+registry.register("CreateUser", createUserSchema);
+registry.register("CreateUserResponse", createUserResponseSchema);
+registry.register("FundWallet", fundWalletSchema);
+registry.register("WithdrawWallet", withdrawWalletSchema);
+registry.register("TransferWallet", transferWalletSchema);
+registry.register("WalletResponse", walletResponseSchema);
+registry.register("WalletMutationResponse", walletMutationResponseSchema);
+registry.register("TransferResponse", transferResponseSchema);
+registry.register("TransactionsResponse", transactionsResponseSchema);
 
 registry.registerComponent("securitySchemes", "bearerAuth", {
   type: "http",
@@ -50,6 +73,7 @@ function buildResponse({ description, schema }: RouteResponse) {
 }
 
 export function registerRoute(config: RouteConfig) {
+  console.info(`[docs] registerRoute ${config.method.toUpperCase()} ${config.path}`);
   const responses: Record<number, RouteResponse> = { ...config.responses };
 
   for (const status of defaultErrorStatuses) {

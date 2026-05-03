@@ -14,15 +14,19 @@ function getDocument() {
 }
 
 router.get("/openapi.json", (req, res) => {
-  res.status(200).json(getDocument());
+  const document = getDocument();
+  const pathCount = Object.keys(document.paths ?? {}).length;
+  console.info(`[docs] serving OpenAPI with ${pathCount} paths`);
+  res.status(200).json(document);
 });
 
 if (env.docs.uiEnabled) {
   router.use(
     "/",
     swaggerUi.serve,
-    swaggerUi.setup(getDocument(), {
+    swaggerUi.setup(null, {
       swaggerOptions: {
+        url: "/docs/openapi.json",
         persistAuthorization: true
       }
     })

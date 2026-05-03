@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { createUserHandler } from "../controllers/user.controller";
-import { registerRoute } from "../docs";
+import { registerRoute } from "../docs/registry";
 import { apiResponseSchema } from "../validation/response.schema";
 import { createUserResponseSchema, createUserSchema } from "../validation/user.schema";
 

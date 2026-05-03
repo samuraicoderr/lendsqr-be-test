@@ -5,7 +5,7 @@ import {
   transferWalletHandler,
   withdrawWalletHandler
 } from "../controllers/wallet.controller";
-import { registerRoute } from "../docs";
+import { registerRoute } from "../docs/registry";
 import { userIdParamSchema } from "../validation/common.schema";
 import { apiResponseSchema } from "../validation/response.schema";
 import {
