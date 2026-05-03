@@ -4,8 +4,11 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "set PORT=8000 && ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc"
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "migrate": "knex --knexfile knexfile.js migrate:latest",
+    "migrate:rollback": "knex --knexfile knexfile.js migrate:rollback"
   },
   "keywords": [],
   "author": "",
@@ -18,7 +21,14 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "axios": "^1.16.0",
+    "decimal.js": "^10.5.0",
+    "dotenv": "^17.2.1",
     "express": "^5.2.1",
-    "usingenv": "^4.0.0"
+    "knex": "^3.1.0",
+    "mysql2": "^3.14.1",
+    "usingenv": "^4.0.0",
+    "uuid": "^11.1.0",
+    "zod": "^4.1.9"
   }
 }
