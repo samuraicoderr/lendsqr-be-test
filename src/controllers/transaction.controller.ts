@@ -1,11 +1,7 @@
 import { Request, Response } from "express";
-import { z } from "zod";
 import { ApiError } from "../utils/errors";
 import { listUserTransactions } from "../services/transaction.service";
-
-const userIdParamSchema = z.object({
-  userId: z.string().uuid()
-});
+import { userIdParamSchema } from "../validation/common.schema";
 
 export async function listTransactionsHandler(req: Request, res: Response) {
   const parsed = userIdParamSchema.safeParse(req.params);

@@ -1,36 +1,15 @@
 import { Request, Response } from "express";
-import { z } from "zod";
 import { ApiError } from "../utils/errors";
 import { fundWallet, getWalletByUserId, transferWallet, withdrawWallet } from "../services/wallet.service";
-
-const fundSchema = z.object({
-  userId: z.string().uuid(),
-  amount: z.union([z.string(), z.number()]),
-  reference: z.string().min(6).max(100),
-  metadata: z.record(z.any()).optional()
-});
-
-const withdrawSchema = z.object({
-  userId: z.string().uuid(),
-  amount: z.union([z.string(), z.number()]),
-  reference: z.string().min(6).max(100),
-  metadata: z.record(z.any()).optional()
-});
-
-const transferSchema = z.object({
-  senderUserId: z.string().uuid(),
-  receiverUserId: z.string().uuid(),
-  amount: z.union([z.string(), z.number()]),
-  reference: z.string().min(6).max(100),
-  metadata: z.record(z.any()).optional()
-});
-
-const userIdParamSchema = z.object({
-  userId: z.string().uuid()
-});
+import {
+  fundWalletSchema,
+  transferWalletSchema,
+  withdrawWalletSchema
+} from "../validation/wallet.schema";
+import { userIdParamSchema } from "../validation/common.schema";
 
 export async function fundWalletHandler(req: Request, res: Response) {
-  const parsed = fundSchema.safeParse(req.body);
+  const parsed = fundWalletSchema.safeParse(req.body);
   if (!parsed.success) {
     throw ApiError.badRequest("Invalid request body", parsed.error.flatten());
   }
@@ -40,7 +19,7 @@ export async function fundWalletHandler(req: Request, res: Response) {
 }
 
 export async function withdrawWalletHandler(req: Request, res: Response) {
-  const parsed = withdrawSchema.safeParse(req.body);
+  const parsed = withdrawWalletSchema.safeParse(req.body);
   if (!parsed.success) {
     throw ApiError.badRequest("Invalid request body", parsed.error.flatten());
   }
@@ -50,7 +29,7 @@ export async function withdrawWalletHandler(req: Request, res: Response) {
 }
 
 export async function transferWalletHandler(req: Request, res: Response) {
-  const parsed = transferSchema.safeParse(req.body);
+  const parsed = transferWalletSchema.safeParse(req.body);
   if (!parsed.success) {
     throw ApiError.badRequest("Invalid request body", parsed.error.flatten());
   }

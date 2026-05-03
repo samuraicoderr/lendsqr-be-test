@@ -2,6 +2,7 @@ import express from "express";
 import healthRouter from "./routes/health.route";
 import apiRouter from "./routes";
 import { errorHandler, notFoundHandler } from "./middleware/error.middleware";
+import { docsRouter } from "./docs";
 
 const app = express();
 
@@ -10,6 +11,7 @@ app.use(express.json());
 // routes
 app.use("/health", healthRouter);
 app.use("/api", apiRouter);
+app.use("/docs", docsRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

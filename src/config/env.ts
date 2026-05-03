@@ -1,5 +1,4 @@
 import dotenv from "dotenv";
-import { get } from "node:http";
 
 dotenv.config();
 
@@ -32,9 +31,27 @@ function getNumberEnv(key: string, defaultValue: number): number {
   return parsed;
 }
 
+function getBooleanEnv(key: string, defaultValue: boolean): boolean {
+  const value = process.env[key];
+  if (!value) {
+    return defaultValue;
+  }
+  const normalized = value.toLowerCase().trim();
+  if (["true", "1", "yes", "y"].includes(normalized)) {
+    return true;
+  }
+  if (["false", "0", "no", "n"].includes(normalized)) {
+    return false;
+  }
+  throw new Error(`Invalid boolean environment variable: ${key}`);
+}
+
 export const env = {
   port: getNumberEnv("PORT", 3000),
   apiToken: getEnv("API_TOKEN", "FAKE-AUTH-TOKEN"),
+  docs: {
+    uiEnabled: getBooleanEnv("DOCS_UI_ENABLED", true)
+  },
   db: {
     host: mustGetEnv("DB_HOST"),
     port: getNumberEnv("DB_PORT", 3306),
