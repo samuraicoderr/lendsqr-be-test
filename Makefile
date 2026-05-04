@@ -11,6 +11,8 @@ build:
 run:
 	npm run dev
 
+test:
+	npm test
 
 diff-staged:
 	git diff --cached > ./a.diff
