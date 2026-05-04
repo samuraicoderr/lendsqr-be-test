@@ -2,7 +2,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const isEmptyArray = (arr: unknown): arr is [] => Array.isArray(arr) && arr.length === 0;
+const isEmptyArray = (arr: any[]): boolean => {
+  return !Array.isArray(arr) || arr.length === 0;
+}
 
 function _getEnv(
   key: string,
@@ -74,8 +76,15 @@ export const env = {
   docs: {
     uiEnabled: getBooleanEnv("DOCS_UI_ENABLED", true),
   },
+  dummyUser: {
+    email: "williamusanga23@gmail.com",
+    firstName: "William",
+    lastName: "Usanga",
+    rawPassword: "password123",
+    isEmailVerified: true,
+  },
   developerEmails:
-    isEmptyArray(_DEVELOPER_EMAILS.length)
+    isEmptyArray(_DEVELOPER_EMAILS)
       ? _DEVELOPER_EMAILS
       : ["williamusanga23@gmail.com"],
   zeptomail: {

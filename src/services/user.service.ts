@@ -1,5 +1,5 @@
 import { db } from "../db/knex";
-import { isBlacklisted } from "../clients/adjutor.client";
+import { checkEmailBlacklist } from "./adjutor.service";
 import { ApiError } from "../utils/errors";
 import { newId } from "../utils/ids";
 import { findUserByEmail, insertUser } from "../repositories/user.repository";
@@ -12,8 +12,8 @@ export interface CreateUserInput {
 }
 
 export async function createUser(input: CreateUserInput) {
-  const blacklisted = await isBlacklisted(input.email);
-  if (blacklisted) {
+  const blacklistResult = await checkEmailBlacklist(input.email);
+  if (blacklistResult.isBlacklisted) {
     throw ApiError.forbidden("User is blacklisted");
   }
 

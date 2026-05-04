@@ -1,6 +1,25 @@
 import axios from "axios";
 import { env } from "../config/env";
-import { ApiError } from "../utils/errors";
+
+export type AdjutorKarmaData = {
+  karma_identity: string;
+  amount_in_contention: string;
+  reason: string | null;
+  default_date: string | null;
+  karma_type: { karma: string } | null;
+  karma_identity_type: { identity_type: string } | null;
+  reporting_entity: { name: string; email: string } | null;
+};
+
+export type AdjutorKarmaResponse = {
+  status: string;
+  message: string;
+  data?: AdjutorKarmaData | null;
+  meta?: {
+    cost?: number;
+    balance?: number;
+  };
+};
 
 const adjutorClient = axios.create({
   baseURL: env.adjutor.baseUrl,
@@ -10,37 +29,22 @@ const adjutorClient = axios.create({
   }
 });
 
-function resolveBlacklistStatus(payload: unknown): boolean {
-  const data = payload as {
-    data?: {
-      karma?: { status?: string };
-      status?: string;
-      blacklisted?: boolean;
-    };
-  };
-
-  const rawStatus = data?.data?.karma?.status ?? data?.data?.status;
-  if (typeof rawStatus === "string") {
-    const normalized = rawStatus.toLowerCase();
-    if (normalized === "blacklisted" || normalized === "bad" || normalized === "blocked") {
-      return true;
-    }
+function isAdjutorResponse(payload: unknown): payload is AdjutorKarmaResponse {
+  if (!payload || typeof payload !== "object") {
+    return false;
   }
-
-  if (data?.data?.blacklisted === true) {
-    return true;
-  }
-
-  return false;
+  const response = payload as { status?: unknown; message?: unknown };
+  return typeof response.status === "string" && typeof response.message === "string";
 }
 
-export async function isBlacklisted(email: string): Promise<boolean> {
-  try {
-    const response = await adjutorClient.get(
-      `/v1/verification/karma/${encodeURIComponent(email)}`
-    );
-    return resolveBlacklistStatus(response.data);
-  } catch (error) {
-    throw ApiError.serviceUnavailable("Blacklist verification failed");
+export async function fetchKarma(identity: string): Promise<AdjutorKarmaResponse> {
+  const response = await adjutorClient.get(
+    `/v2/verification/karma/${encodeURIComponent(identity)}`
+  );
+
+  if (!isAdjutorResponse(response.data)) {
+    throw new Error("Invalid Adjutor response");
   }
+
+  return response.data;
 }
