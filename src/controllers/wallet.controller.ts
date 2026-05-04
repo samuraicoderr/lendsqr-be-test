@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ApiError } from "../utils/errors";
 import { fundWallet, getWalletByUserId, transferWallet, withdrawWallet } from "../services/wallet.service";
+import { listUserTransactions } from "../services/transaction.service";
 import {
   fundWalletSchema,
   transferWalletSchema,
@@ -45,5 +46,23 @@ export async function getWalletHandler(req: Request, res: Response) {
   }
 
   const result = await getWalletByUserId(parsed.data.userId);
+  res.status(200).json({ data: result });
+}
+
+export async function getWalletBalanceHandler(req: Request, res: Response) {
+  if (!req.user) {
+    throw ApiError.unauthorized("Authentication required");
+  }
+
+  const result = await getWalletByUserId(req.user.id);
+  res.status(200).json({ data: result });
+}
+
+export async function listWalletTransactionsHandler(req: Request, res: Response) {
+  if (!req.user) {
+    throw ApiError.unauthorized("Authentication required");
+  }
+
+  const result = await listUserTransactions(req.user.id);
   res.status(200).json({ data: result });
 }

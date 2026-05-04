@@ -1,7 +1,9 @@
 import { Router } from "express";
 import {
   fundWalletHandler,
+  getWalletBalanceHandler,
   getWalletHandler,
+  listWalletTransactionsHandler,
   transferWalletHandler,
   withdrawWalletHandler
 } from "../controllers/wallet.controller";
@@ -16,17 +18,22 @@ import {
   walletResponseSchema,
   withdrawWalletSchema
 } from "../validation/wallet.schema";
+import { transactionsResponseSchema } from "../validation/transaction.schema";
+import { requireAuth } from "../middleware/auth.middleware";
+import { requireAdmin, requireVerified } from "../middleware/permission.middleware";
 
 const walletRouter = Router();
 
-walletRouter.post("/fund", fundWalletHandler);
-walletRouter.post("/withdraw", withdrawWalletHandler);
-walletRouter.post("/transfer", transferWalletHandler);
-walletRouter.get("/:userId", getWalletHandler);
+walletRouter.post("/fund", requireAuth, requireVerified, fundWalletHandler);
+walletRouter.post("/withdraw", requireAuth, requireVerified, withdrawWalletHandler);
+walletRouter.post("/transfer", requireAuth, requireVerified, transferWalletHandler);
+walletRouter.get("/balance", requireAuth, requireVerified, getWalletBalanceHandler);
+walletRouter.get("/transactions", requireAuth, requireVerified, listWalletTransactionsHandler);
+walletRouter.get("/:userId", requireAuth, requireAdmin, getWalletHandler);
 
 registerRoute({
   method: "post",
-  path: "/api/wallets/fund",
+  path: "/api/v1/wallets/fund",
   summary: "Fund a wallet",
   tags: ["Wallets"],
   request: {
@@ -42,7 +49,7 @@ registerRoute({
 
 registerRoute({
   method: "post",
-  path: "/api/wallets/withdraw",
+  path: "/api/v1/wallets/withdraw",
   summary: "Withdraw from a wallet",
   tags: ["Wallets"],
   request: {
@@ -58,7 +65,7 @@ registerRoute({
 
 registerRoute({
   method: "post",
-  path: "/api/wallets/transfer",
+  path: "/api/v1/wallets/transfer",
   summary: "Transfer funds between wallets",
   tags: ["Wallets"],
   request: {
@@ -74,7 +81,33 @@ registerRoute({
 
 registerRoute({
   method: "get",
-  path: "/api/wallets/{userId}",
+  path: "/api/v1/wallets/balance",
+  summary: "Get wallet balance",
+  tags: ["Wallets"],
+  responses: {
+    200: {
+      description: "Wallet fetched",
+      schema: apiResponseSchema(walletResponseSchema)
+    }
+  }
+});
+
+registerRoute({
+  method: "get",
+  path: "/api/v1/wallets/transactions",
+  summary: "Get wallet transactions",
+  tags: ["Wallets"],
+  responses: {
+    200: {
+      description: "Transactions fetched",
+      schema: apiResponseSchema(transactionsResponseSchema)
+    }
+  }
+});
+
+registerRoute({
+  method: "get",
+  path: "/api/v1/wallets/{userId}",
   summary: "Get a wallet by user ID",
   tags: ["Wallets"],
   request: {

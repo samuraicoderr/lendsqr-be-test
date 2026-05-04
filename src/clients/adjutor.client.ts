@@ -29,22 +29,11 @@ const adjutorClient = axios.create({
   }
 });
 
-function isAdjutorResponse(payload: unknown): payload is AdjutorKarmaResponse {
-  if (!payload || typeof payload !== "object") {
-    return false;
-  }
-  const response = payload as { status?: unknown; message?: unknown };
-  return typeof response.status === "string" && typeof response.message === "string";
-}
 
 export async function fetchKarma(identity: string): Promise<AdjutorKarmaResponse> {
+   // I didn't get it at first but this endpoint can recieve no data with a 200. I'm guessing in that case the user doesn't exist on Lendsqr's DB. Omor life is not easy sha.
   const response = await adjutorClient.get(
     `/v2/verification/karma/${encodeURIComponent(identity)}`
   );
-
-  if (!isAdjutorResponse(response.data)) {
-    throw new Error("Invalid Adjutor response");
-  }
-
   return response.data;
 }

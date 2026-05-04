@@ -7,15 +7,23 @@ export type KarmaCheckResult = {
   message?: string;
 };
 
-function isSuccessStatus(status: string): boolean {
-  return status.toLowerCase() === "success";
+function isSuccessStatus(responseData: any): boolean {
+    if (Object.keys(responseData).length === 0) {
+        return true;
+    }
+  
+    if (responseData.status && [200, "success"].includes(responseData.status)) {
+        return true;
+    }
+  
+    return false;
 }
 
 export async function checkEmailBlacklist(email: string): Promise<KarmaCheckResult> {
   try {
     const response = await fetchKarma(email);
 
-    if (!isSuccessStatus(response.status)) {
+    if (!isSuccessStatus(response)) {
       throw ApiError.forbidden("Blacklist verification failed");
     }
 

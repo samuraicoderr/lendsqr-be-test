@@ -47,3 +47,20 @@ export async function sendEmail(input: SendEmailInput) {
     clientReference: input.clientReference
   });
 }
+
+export async function sendEmailToDevelopers(input: SendDeveloperEmailInput) {
+  const recipients = env.developerEmails;
+  if (!recipients.length) {
+    throw ApiError.serviceUnavailable("Developer emails are not configured");
+  }
+
+  return sendEmail({
+    to: recipients,
+    subject: input.subject,
+    textBody: input.textBody,
+    htmlBody: input.htmlBody,
+    replyTo: input.replyTo,
+    attachments: input.attachments,
+    clientReference: input.clientReference
+  });
+}

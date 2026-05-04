@@ -8,5 +8,6 @@
     "strict": true,
     "types": ["node", "jest"]
   },
-  "include": ["src", "__tests__"]
+  "include": ["src"],
+  "exclude": ["__tests__"]
 }

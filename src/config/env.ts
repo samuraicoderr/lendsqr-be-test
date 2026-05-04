@@ -2,9 +2,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const isEmptyArray = (arr: any[]): boolean => {
+const isEmptyArray = (arr: unknown[]): boolean => {
   return !Array.isArray(arr) || arr.length === 0;
-}
+};
 
 function _getEnv(
   key: string,
@@ -30,7 +30,7 @@ function _getEnv(
 }
 
 export function getEnvAsString(key: string, defaultValue?: string): string {
-    return _getEnv(key, defaultValue) as string;
+  return _getEnv(key, defaultValue) as string;
 }
 
 function mustGetEnv(key: string): string {
@@ -73,20 +73,28 @@ const _DEVELOPER_EMAILS = _getEnv("DEVELOPER_EMAILS", "", true) as string[];
 export const env = {
   port: getNumberEnv("PORT", 3000),
   apiToken: getEnvAsString("API_TOKEN", "FAKE-AUTH-TOKEN"),
+  backendConfig: {
+    baseURL: getEnvAsString("BACKEND_BASE_URL")
+  },
+  auth: {
+    jwtSecret: mustGetEnv("JWT_SECRET"),
+    jwtExpiresIn: getEnvAsString("JWT_EXPIRES_IN", "1d"),
+    verificationTokenTtlHours: getNumberEnv("EMAIL_VERIFICATION_TTL_HOURS", 48)
+  },
   docs: {
     uiEnabled: getBooleanEnv("DOCS_UI_ENABLED", true),
   },
   dummyUser: {
-    email: "williamusanga23@gmail.com",
-    firstName: "William",
-    lastName: "Usanga",
-    rawPassword: "password123",
-    isEmailVerified: true,
+    email: getEnvAsString("DUMMY_USER_EMAIL", "williamusanga23@gmail.com"),
+    firstName: getEnvAsString("DUMMY_USER_FIRST_NAME", "William"),
+    lastName: getEnvAsString("DUMMY_USER_LAST_NAME", "Usanga"),
+    rawPassword: getEnvAsString("DUMMY_USER_PASSWORD", "password123"),
+    isEmailVerified: getBooleanEnv("DUMMY_USER_EMAIL_VERIFIED", true)
   },
   developerEmails:
     isEmptyArray(_DEVELOPER_EMAILS)
-      ? _DEVELOPER_EMAILS
-      : ["williamusanga23@gmail.com"],
+      ? ["williamusanga23@gmail.com"]
+      : _DEVELOPER_EMAILS,
   zeptomail: {
     apiKey: getEnvAsString("ZEPTOMAIL_API_KEY"),
     fromAddress: getEnvAsString("ZEPTOMAIL_FROM_ADDRESS"),

@@ -14,6 +14,12 @@ run:
 test:
 	npm test
 
+
+# db stuff
+
+migrate:
+	npx knex migrate:latest
+
 diff-staged:
 	git diff --cached > ./a.diff
 	code ./a.diff
@@ -40,3 +46,4 @@ wiff+:
 	git diff --cached > ./a.diff
 	windsurf ./a.diff
 	rm ./a.diff
+

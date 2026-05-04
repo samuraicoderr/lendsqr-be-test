@@ -10,7 +10,7 @@ app.use(express.json());
 
 // routes
 app.use("/health", healthRouter);
-app.use("/api", apiRouter);
+app.use("/api/v1", apiRouter);
 app.use("/docs", docsRouter);
 
 app.use(notFoundHandler);

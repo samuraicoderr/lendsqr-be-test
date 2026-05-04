@@ -158,3 +158,4 @@ tags
 .env.*
 !.env.example
 todo.md
+dist/

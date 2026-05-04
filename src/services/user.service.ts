@@ -1,56 +1,42 @@
 import { db } from "../db/knex";
-import { checkEmailBlacklist } from "./adjutor.service";
 import { ApiError } from "../utils/errors";
-import { newId } from "../utils/ids";
-import { findUserByEmail, insertUser } from "../repositories/user.repository";
-import { insertWallet } from "../repositories/wallet.repository";
+import { findUserById, listUsers } from "../repositories/user.repository";
+import { AuthUser } from "../types/auth";
 
-export interface CreateUserInput {
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
-export async function createUser(input: CreateUserInput) {
-  const blacklistResult = await checkEmailBlacklist(input.email);
-  if (blacklistResult.isBlacklisted) {
-    throw ApiError.forbidden("User is blacklisted");
+export async function getUserById(id: string): Promise<AuthUser> {
+  const user = await findUserById(db, id);
+  if (!user) {
+    throw ApiError.notFound("User not found");
   }
 
-  return db.transaction(async (trx) => {
-    const existing = await findUserByEmail(trx, input.email);
-    if (existing) {
-      throw ApiError.conflict("Email already exists");
-    }
+  return mapUser(user);
+}
 
-    const userId = newId();
-    const walletId = newId();
+export async function getUserProfile(user: AuthUser): Promise<AuthUser> {
+  return user;
+}
 
-    await insertUser(trx, {
-      id: userId,
-      first_name: input.firstName,
-      last_name: input.lastName,
-      email: input.email,
-      is_blacklisted: false
-    });
+export async function listAllUsers(): Promise<AuthUser[]> {
+  const users = await listUsers(db);
+  return users.map(mapUser);
+}
 
-    await insertWallet(trx, {
-      id: walletId,
-      user_id: userId,
-      balance: "0.00",
-      currency: "NGN"
-    });
-
-    return {
-      id: userId,
-      firstName: input.firstName,
-      lastName: input.lastName,
-      email: input.email,
-      wallet: {
-        id: walletId,
-        balance: "0.00",
-        currency: "NGN"
-      }
-    };
-  });
+function mapUser(user: {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_email_verified: number | boolean;
+  is_two_factor_enabled: number | boolean;
+  is_admin: number | boolean;
+}): AuthUser {
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    isEmailVerified: Boolean(user.is_email_verified),
+    isTwoFactorEnabled: Boolean(user.is_two_factor_enabled),
+    isAdmin: Boolean(user.is_admin)
+  };
 }

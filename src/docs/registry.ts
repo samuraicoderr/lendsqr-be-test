@@ -2,7 +2,16 @@ import { OpenAPIRegistry, extendZodWithOpenApi } from "@asteasolutions/zod-to-op
 import { z, ZodTypeAny } from "zod";
 import { userIdParamSchema } from "../validation/common.schema";
 import { errorResponseSchema } from "../validation/response.schema";
-import { createUserResponseSchema, createUserSchema } from "../validation/user.schema";
+import {
+  authResponseSchema,
+  loginSchema,
+  registerResponseSchema,
+  registerSchema,
+  resendVerificationResponseSchema,
+  resendVerificationSchema,
+  verifyEmailSchema
+} from "../validation/auth.schema";
+import { userResponseSchema, usersResponseSchema } from "../validation/user.schema";
 import {
   fundWalletSchema,
   transferResponseSchema,
@@ -19,8 +28,15 @@ export const registry = new OpenAPIRegistry();
 
 registry.register("ErrorResponse", errorResponseSchema);
 registry.register("UserIdParam", userIdParamSchema);
-registry.register("CreateUser", createUserSchema);
-registry.register("CreateUserResponse", createUserResponseSchema);
+registry.register("Register", registerSchema);
+registry.register("RegisterResponse", registerResponseSchema);
+registry.register("Login", loginSchema);
+registry.register("AuthResponse", authResponseSchema);
+registry.register("ResendVerification", resendVerificationSchema);
+registry.register("ResendVerificationResponse", resendVerificationResponseSchema);
+registry.register("VerifyEmail", verifyEmailSchema);
+registry.register("User", userResponseSchema);
+registry.register("Users", usersResponseSchema);
 registry.register("FundWallet", fundWalletSchema);
 registry.register("WithdrawWallet", withdrawWalletSchema);
 registry.register("TransferWallet", transferWalletSchema);
@@ -38,8 +54,8 @@ registry.registerComponent("securitySchemes", "bearerAuth", {
 const defaultErrorStatuses = [400, 401, 403, 404, 409, 503];
 
 type RouteRequest = {
-  params?: ZodTypeAny;
-  query?: ZodTypeAny;
+  params?: z.AnyZodObject;
+  query?: z.AnyZodObject;
   body?: ZodTypeAny;
 };
 
