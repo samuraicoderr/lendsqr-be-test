@@ -1,25 +1,79 @@
 import fs from "fs";
+import Handlebars from "handlebars";
 import path from "path";
 
-const templateCache = new Map<string, string>();
+type TemplateParams = Record<string, unknown>;
 
-function loadTemplate(fileName: string): string {
+const templateCache = new Map<string, Handlebars.TemplateDelegate>();
+
+function loadTemplate(fileName: string): Handlebars.TemplateDelegate {
   if (templateCache.has(fileName)) {
-    return templateCache.get(fileName) as string;
+    return templateCache.get(fileName) as Handlebars.TemplateDelegate;
   }
 
   const filePath = path.resolve(process.cwd(), "src", "email_templates", fileName);
   const content = fs.readFileSync(filePath, "utf8");
-  templateCache.set(fileName, content);
-  return content;
+  const template = Handlebars.compile(content, { noEscape: true });
+  templateCache.set(fileName, template);
+  return template;
+}
+
+function renderTemplate(fileName: string, params: TemplateParams): string {
+  return loadTemplate(fileName)(params);
 }
 
 export function renderVerificationEmail(params: {
   firstName: string;
   verificationUrl: string;
 }): string {
-  const template = loadTemplate("verification.html");
-  return template
-    .replace(/\{\{FIRST_NAME\}\}/g, params.firstName)
-    .replace(/\{\{VERIFICATION_URL\}\}/g, params.verificationUrl);
+  return renderTemplate("verification.html", {
+    FIRST_NAME: params.firstName,
+    VERIFICATION_URL: params.verificationUrl
+  });
+}
+
+export function renderWalletFundedEmail(params: {
+  firstName: string;
+  amount: string;
+  balance: string;
+}): string {
+  return renderTemplate("wallet-funded.html", {
+    FIRST_NAME: params.firstName,
+    AMOUNT: params.amount,
+    BALANCE: params.balance
+  });
+}
+
+export function renderWalletWithdrawnEmail(params: {
+  firstName: string;
+  amount: string;
+  balance: string;
+}): string {
+  return renderTemplate("wallet-withdrawn.html", {
+    FIRST_NAME: params.firstName,
+    AMOUNT: params.amount,
+    BALANCE: params.balance
+  });
+}
+
+export function renderTransferReceivedEmail(params: {
+  firstName: string;
+  senderName: string;
+  amount: string;
+  balance: string;
+}): string {
+  return renderTemplate("transfer-received.html", {
+    FIRST_NAME: params.firstName,
+    SENDER_NAME: params.senderName,
+    AMOUNT: params.amount,
+    BALANCE: params.balance
+  });
+}
+
+export function renderLoginSuccessEmail(params: {
+  firstName: string;
+}): string {
+  return renderTemplate("login-success.html", {
+    FIRST_NAME: params.firstName
+  });
 }

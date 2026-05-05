@@ -4,6 +4,7 @@ import { DbOrTrx } from "./user.repository";
 export interface WalletRow {
   id: string;
   user_id: string;
+  account_number: string;
   balance: string;
   currency: string;
   created_at: Date;
@@ -21,11 +22,28 @@ export async function findWalletByUserId(
   return db<WalletRow>("wallets").where({ user_id: userId }).first();
 }
 
+export async function findWalletByAccountNumber(
+  db: DbOrTrx,
+  accountNumber: string
+): Promise<WalletRow | undefined> {
+  return db<WalletRow>("wallets").where({ account_number: accountNumber }).first();
+}
+
 export async function findWalletByUserIdForUpdate(
   db: Knex.Transaction,
   userId: string
 ): Promise<WalletRow | undefined> {
   return db<WalletRow>("wallets").where({ user_id: userId }).forUpdate().first();
+}
+
+export async function findWalletsByIdsForUpdate(
+  db: Knex.Transaction,
+  walletIds: string[]
+): Promise<WalletRow[]> {
+  return db<WalletRow>("wallets")
+    .whereIn("id", walletIds)
+    .orderBy("id", "asc")
+    .forUpdate();
 }
 
 export async function findWalletsByUserIdsForUpdate(

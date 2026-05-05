@@ -30,6 +30,7 @@ export const authResponseSchema = z.object({
 export const registerResponseSchema = userResponseSchema.extend({
   wallet: z.object({
     id: z.string().uuid(),
+    accountNumber: z.string().regex(/^\d{11}$/),
     balance: z.string(),
     currency: z.string()
   })

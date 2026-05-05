@@ -32,6 +32,7 @@
     "decimal.js": "^10.5.0",
     "dotenv": "^17.2.1",
     "express": "^5.2.1",
+    "handlebars": "^4.7.9",
     "jsonwebtoken": "^9.0.2",
     "knex": "^3.1.0",
     "mysql2": "^3.14.1",

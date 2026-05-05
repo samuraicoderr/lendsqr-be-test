@@ -10,32 +10,61 @@ import {
 import { userIdParamSchema } from "../validation/common.schema";
 
 export async function fundWalletHandler(req: Request, res: Response) {
+  if (!req.user) {
+    throw ApiError.unauthorized("Authentication required");
+  }
+
   const parsed = fundWalletSchema.safeParse(req.body);
   if (!parsed.success) {
     throw ApiError.badRequest("Invalid request body", parsed.error.flatten());
   }
 
-  const result = await fundWallet(parsed.data);
+  const result = await fundWallet({
+    userId: req.user.id,
+    email: req.user.email,
+    firstName: req.user.firstName,
+    amount: parsed.data.amount
+  });
   res.status(200).json({ data: result });
 }
 
 export async function withdrawWalletHandler(req: Request, res: Response) {
+  if (!req.user) {
+    throw ApiError.unauthorized("Authentication required");
+  }
+
   const parsed = withdrawWalletSchema.safeParse(req.body);
   if (!parsed.success) {
     throw ApiError.badRequest("Invalid request body", parsed.error.flatten());
   }
 
-  const result = await withdrawWallet(parsed.data);
+  const result = await withdrawWallet({
+    userId: req.user.id,
+    email: req.user.email,
+    firstName: req.user.firstName,
+    amount: parsed.data.amount
+  });
   res.status(200).json({ data: result });
 }
 
 export async function transferWalletHandler(req: Request, res: Response) {
+  if (!req.user) {
+    throw ApiError.unauthorized("Authentication required");
+  }
+
   const parsed = transferWalletSchema.safeParse(req.body);
   if (!parsed.success) {
     throw ApiError.badRequest("Invalid request body", parsed.error.flatten());
   }
 
-  const result = await transferWallet(parsed.data);
+  const result = await transferWallet({
+    senderUserId: req.user.id,
+    senderFirstName: req.user.firstName,
+    senderLastName: req.user.lastName,
+    receiverAccountNumber: parsed.data.receiverAccountNumber,
+    receiverUserId: parsed.data.receiverUserId,
+    amount: parsed.data.amount
+  });
   res.status(200).json({ data: result });
 }
 

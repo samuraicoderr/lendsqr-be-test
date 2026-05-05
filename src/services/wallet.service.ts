@@ -3,34 +3,42 @@ import { ApiError } from "../utils/errors";
 import { newId } from "../utils/ids";
 import { addAmounts, hasSufficientBalance, parseAmount, subtractAmounts } from "../utils/money";
 import {
+  findWalletByAccountNumber,
   findWalletByUserId,
   findWalletByUserIdForUpdate,
-  findWalletsByUserIdsForUpdate,
+  findWalletsByIdsForUpdate,
   updateWalletBalance
 } from "../repositories/wallet.repository";
-import { findTransactionByReference, insertTransaction } from "../repositories/transaction.repository";
-import { findTransferByReference, insertTransfer } from "../repositories/transfer.repository";
+import { insertTransaction } from "../repositories/transaction.repository";
+import { insertTransfer } from "../repositories/transfer.repository";
+import { findUserById } from "../repositories/user.repository";
+import {
+  sendTransferReceivedNotification,
+  sendWalletFundedNotification,
+  sendWalletWithdrawnNotification
+} from "./notification.service";
 
 export interface FundWalletInput {
   userId: string;
+  email: string;
+  firstName: string;
   amount: string | number;
-  reference: string;
-  metadata?: object;
 }
 
 export interface WithdrawWalletInput {
   userId: string;
+  email: string;
+  firstName: string;
   amount: string | number;
-  reference: string;
-  metadata?: object;
 }
 
 export interface TransferWalletInput {
   senderUserId: string;
-  receiverUserId: string;
+  senderFirstName: string;
+  senderLastName: string;
+  receiverAccountNumber?: string;
+  receiverUserId?: string;
   amount: string | number;
-  reference: string;
-  metadata?: object;
 }
 
 export async function getWalletByUserId(userId: string) {
@@ -42,6 +50,7 @@ export async function getWalletByUserId(userId: string) {
   return {
     id: wallet.id,
     userId: wallet.user_id,
+    accountNumber: wallet.account_number,
     balance: wallet.balance,
     currency: wallet.currency
   };
@@ -50,23 +59,10 @@ export async function getWalletByUserId(userId: string) {
 export async function fundWallet(input: FundWalletInput) {
   const amount = parseAmount(input.amount);
 
-  return db.transaction(async (trx) => {
+  const result = await db.transaction(async (trx) => {
     const wallet = await findWalletByUserIdForUpdate(trx, input.userId);
     if (!wallet) {
       throw ApiError.notFound("Wallet not found");
-    }
-
-    const existing = await findTransactionByReference(trx, input.reference);
-    if (existing) {
-      if (existing.wallet_id !== wallet.id) {
-        throw ApiError.conflict("Reference already used by another wallet");
-      }
-      return {
-        walletId: wallet.id,
-        balance: wallet.balance,
-        transactionId: existing.id,
-        reference: existing.reference
-      };
     }
 
     const transactionId = newId();
@@ -77,9 +73,9 @@ export async function fundWallet(input: FundWalletInput) {
       wallet_id: wallet.id,
       type: "credit",
       amount,
-      reference: input.reference,
+      reference: `fund-${transactionId}`,
       status: "success",
-      metadata: input.metadata ?? null
+      metadata: null
     });
 
     await updateWalletBalance(trx, wallet.id, newBalance);
@@ -87,32 +83,27 @@ export async function fundWallet(input: FundWalletInput) {
     return {
       walletId: wallet.id,
       balance: newBalance,
-      transactionId,
-      reference: input.reference
+      transactionId
     };
   });
+
+  await sendWalletFundedNotification({
+    email: input.email,
+    firstName: input.firstName,
+    amount,
+    balance: result.balance
+  });
+
+  return result;
 }
 
 export async function withdrawWallet(input: WithdrawWalletInput) {
   const amount = parseAmount(input.amount);
 
-  return db.transaction(async (trx) => {
+  const result = await db.transaction(async (trx) => {
     const wallet = await findWalletByUserIdForUpdate(trx, input.userId);
     if (!wallet) {
       throw ApiError.notFound("Wallet not found");
-    }
-
-    const existing = await findTransactionByReference(trx, input.reference);
-    if (existing) {
-      if (existing.wallet_id !== wallet.id) {
-        throw ApiError.conflict("Reference already used by another wallet");
-      }
-      return {
-        walletId: wallet.id,
-        balance: wallet.balance,
-        transactionId: existing.id,
-        reference: existing.reference
-      };
     }
 
     if (!hasSufficientBalance(wallet.balance, amount)) {
@@ -127,9 +118,9 @@ export async function withdrawWallet(input: WithdrawWalletInput) {
       wallet_id: wallet.id,
       type: "debit",
       amount,
-      reference: input.reference,
+      reference: `withdraw-${transactionId}`,
       status: "success",
-      metadata: input.metadata ?? null
+      metadata: null
     });
 
     await updateWalletBalance(trx, wallet.id, newBalance);
@@ -137,35 +128,56 @@ export async function withdrawWallet(input: WithdrawWalletInput) {
     return {
       walletId: wallet.id,
       balance: newBalance,
-      transactionId,
-      reference: input.reference
+      transactionId
     };
   });
+
+  await sendWalletWithdrawnNotification({
+    email: input.email,
+    firstName: input.firstName,
+    amount,
+    balance: result.balance
+  });
+
+  return result;
 }
 
 export async function transferWallet(input: TransferWalletInput) {
-  if (input.senderUserId === input.receiverUserId) {
+  if (Boolean(input.receiverAccountNumber) === Boolean(input.receiverUserId)) {
+    throw ApiError.badRequest("Set either receiverAccountNumber or receiverUserId");
+  }
+
+  if (input.receiverUserId && input.senderUserId === input.receiverUserId) {
     throw ApiError.badRequest("Sender and receiver must be different");
   }
 
   const amount = parseAmount(input.amount);
 
-  return db.transaction(async (trx) => {
-    const existingTransfer = await findTransferByReference(trx, input.reference);
-    if (existingTransfer) {
-      return {
-        transferId: existingTransfer.id,
-        reference: existingTransfer.reference
-      };
+  const result = await db.transaction(async (trx) => {
+    const senderWalletLookup = await findWalletByUserId(trx, input.senderUserId);
+    if (!senderWalletLookup) {
+      throw ApiError.notFound("Sender wallet not found");
     }
 
-    const wallets = await findWalletsByUserIdsForUpdate(trx, [
-      input.senderUserId,
-      input.receiverUserId
+    const receiverWalletLookup = input.receiverUserId
+      ? await findWalletByUserId(trx, input.receiverUserId)
+      : await findWalletByAccountNumber(trx, input.receiverAccountNumber as string);
+
+    if (!receiverWalletLookup) {
+      throw ApiError.notFound("Receiver wallet not found");
+    }
+
+    if (senderWalletLookup.id === receiverWalletLookup.id) {
+      throw ApiError.badRequest("Sender and receiver must be different");
+    }
+
+    const wallets = await findWalletsByIdsForUpdate(trx, [
+      senderWalletLookup.id,
+      receiverWalletLookup.id
     ]);
 
-    const senderWallet = wallets.find((wallet) => wallet.user_id === input.senderUserId);
-    const receiverWallet = wallets.find((wallet) => wallet.user_id === input.receiverUserId);
+    const senderWallet = wallets.find((wallet) => wallet.id === senderWalletLookup.id);
+    const receiverWallet = wallets.find((wallet) => wallet.id === receiverWalletLookup.id);
 
     if (!senderWallet || !receiverWallet) {
       throw ApiError.notFound("Sender or receiver wallet not found");
@@ -176,15 +188,21 @@ export async function transferWallet(input: TransferWalletInput) {
     }
 
     const transferId = newId();
+    const reference = `transfer-${transferId}`;
     const senderBalance = subtractAmounts(senderWallet.balance, amount);
     const receiverBalance = addAmounts(receiverWallet.balance, amount);
+    const receiverUser = await findUserById(trx, receiverWallet.user_id);
+
+    if (!receiverUser) {
+      throw ApiError.notFound("Receiver user not found");
+    }
 
     await insertTransfer(trx, {
       id: transferId,
       sender_wallet_id: senderWallet.id,
       receiver_wallet_id: receiverWallet.id,
       amount,
-      reference: input.reference,
+      reference,
       status: "success"
     });
 
@@ -193,12 +211,11 @@ export async function transferWallet(input: TransferWalletInput) {
       wallet_id: senderWallet.id,
       type: "debit",
       amount,
-      reference: `${input.reference}-debit`,
+      reference: `${reference}-debit`,
       status: "success",
       metadata: {
         transferId,
-        counterpartyWalletId: receiverWallet.id,
-        ...(input.metadata ?? {})
+        counterpartyWalletId: receiverWallet.id
       }
     });
 
@@ -207,12 +224,11 @@ export async function transferWallet(input: TransferWalletInput) {
       wallet_id: receiverWallet.id,
       type: "credit",
       amount,
-      reference: `${input.reference}-credit`,
+      reference: `${reference}-credit`,
       status: "success",
       metadata: {
         transferId,
-        counterpartyWalletId: senderWallet.id,
-        ...(input.metadata ?? {})
+        counterpartyWalletId: senderWallet.id
       }
     });
 
@@ -221,11 +237,28 @@ export async function transferWallet(input: TransferWalletInput) {
 
     return {
       transferId,
-      reference: input.reference,
       senderWalletId: senderWallet.id,
       receiverWalletId: receiverWallet.id,
       senderBalance,
-      receiverBalance
+      receiverBalance,
+      receiverEmail: receiverUser.email,
+      receiverFirstName: receiverUser.first_name
     };
   });
+
+  await sendTransferReceivedNotification({
+    email: result.receiverEmail,
+    firstName: result.receiverFirstName,
+    senderName: `${input.senderFirstName} ${input.senderLastName}`.trim(),
+    amount,
+    balance: result.receiverBalance
+  });
+
+  return {
+    transferId: result.transferId,
+    senderWalletId: result.senderWalletId,
+    receiverWalletId: result.receiverWalletId,
+    senderBalance: result.senderBalance,
+    receiverBalance: result.receiverBalance
+  };
 }

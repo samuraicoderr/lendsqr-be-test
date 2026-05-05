@@ -15,6 +15,8 @@ import { renderVerificationEmail } from "../email_templates";
 import { sendEmail } from "./email.service";
 import { env } from "../config/env";
 import { AuthUser } from "../types/auth";
+import { generateUniqueAccountNumber } from "../utils/account";
+import { sendLoginSuccessNotification } from "./notification.service";
 
 export type RegisterInput = {
   firstName: string;
@@ -52,6 +54,7 @@ export async function registerUser(input: RegisterInput) {
 
     const userId = newId();
     const walletId = newId();
+    const accountNumber = await generateUniqueAccountNumber(trx);
 
     await insertUser(trx, {
       id: userId,
@@ -71,6 +74,7 @@ export async function registerUser(input: RegisterInput) {
     await insertWallet(trx, {
       id: walletId,
       user_id: userId,
+      account_number: accountNumber,
       balance: "0.00",
       currency: "NGN"
     });
@@ -98,6 +102,7 @@ export async function registerUser(input: RegisterInput) {
       isAdmin: true,
       wallet: {
         id: walletId,
+        accountNumber,
         balance: "0.00",
         currency: "NGN"
       }
@@ -127,9 +132,16 @@ export async function loginUser(input: LoginInput) {
     isEmailVerified: Boolean(user.is_email_verified)
   });
 
+  const mappedUser = mapUser(user);
+
+  await sendLoginSuccessNotification({
+    email: user.email,
+    firstName: user.first_name
+  });
+
   return {
     token,
-    user: mapUser(user)
+    user: mappedUser
   };
 }
 
@@ -226,6 +238,7 @@ async function resolveDummyUser(): Promise<AuthUser> {
       await insertWallet(db, {
         id: newId(),
         user_id: existing.id,
+        account_number: await generateUniqueAccountNumber(db),
         balance: "0.00",
         currency: "NGN"
       });
@@ -254,6 +267,7 @@ async function resolveDummyUser(): Promise<AuthUser> {
   await insertWallet(db, {
     id: newId(),
     user_id: userId,
+    account_number: await generateUniqueAccountNumber(db),
     balance: "0.00",
     currency: "NGN"
   });
