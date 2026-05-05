@@ -187,7 +187,7 @@ Important columns:
 
 ## ERD
 
-![Database ERD](database-erd/database-erd.png)
+![Database ERD](database-erd/database-erd-screenshot.png)
 
 The DBML source is stored in:
 

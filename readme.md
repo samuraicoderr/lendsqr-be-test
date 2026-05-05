@@ -33,7 +33,7 @@ The wallet operations are implemented with database transactions and row-level w
 
 ## ERD
 
-![Database ERD](database-erd/database-erd.png)
+![Database ERD](database-erd/database-erd-screenshot.png)
 
 The DBML source is available at [src/db/db.dbml](src/db/db.dbml).
 
