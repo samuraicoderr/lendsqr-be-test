@@ -1,0 +1,74 @@
+Enum transaction_type {
+  credit
+  debit
+}
+
+Enum record_status {
+  pending
+  success
+  failed
+}
+
+Table users {
+  id varchar(36) [pk]
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  email varchar(255) [not null, unique]
+  is_blacklisted boolean [not null, default: false]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP()`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP()`, note: "ON UPDATE CURRENT_TIMESTAMP"]
+  password_hash varchar(255) [not null, default: ""]
+  is_email_verified boolean [not null, default: false]
+  is_two_factor_enabled boolean [not null, default: false]
+  is_admin boolean [not null, default: true]
+  email_verification_token_hash varchar(255)
+  email_verification_expires_at timestamp
+  email_verified_at timestamp
+}
+
+Table wallets {
+  id varchar(36) [pk]
+  user_id varchar(36) [not null, unique]
+  balance decimal(18,2) [not null, default: "0.00"]
+  currency varchar(10) [not null, default: "NGN"]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP()`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP()`, note: "ON UPDATE CURRENT_TIMESTAMP"]
+  account_number varchar(11) [not null, unique]
+
+  Note: "CHECK (balance >= 0)"
+}
+
+Table transactions {
+  id varchar(36) [pk]
+  wallet_id varchar(36) [not null]
+  type transaction_type [not null]
+  amount decimal(18,2) [not null]
+  reference varchar(100) [not null, unique]
+  status record_status [not null, default: "success"]
+  metadata json
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP()`]
+
+  indexes {
+    (wallet_id, created_at) [name: "transactions_wallet_created_idx"]
+  }
+}
+
+Table transfers {
+  id varchar(36) [pk]
+  sender_wallet_id varchar(36) [not null]
+  receiver_wallet_id varchar(36) [not null]
+  amount decimal(18,2) [not null]
+  reference varchar(100) [not null, unique]
+  status record_status [not null, default: "success"]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP()`]
+
+  indexes {
+    sender_wallet_id [name: "transfers_sender_idx"]
+    receiver_wallet_id [name: "transfers_receiver_idx"]
+  }
+}
+
+Ref: wallets.user_id > users.id [delete: cascade]
+Ref: transactions.wallet_id > wallets.id [delete: cascade]
+Ref: transfers.sender_wallet_id > wallets.id [delete: cascade]
+Ref: transfers.receiver_wallet_id > wallets.id [delete: cascade]
