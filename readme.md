@@ -4,9 +4,9 @@ Demo Credit wallet service built with Node.js, TypeScript, Express, Knex, and My
 
 The API is live on Render:
 
-- Base URL: https://williams-samuel-lendsqr-be-test.onrender.com/
-- API docs: https://williams-samuel-lendsqr-be-test.onrender.com/docs
-- Health check: https://williams-samuel-lendsqr-be-test.onrender.com/health
+- Base URL: [https://williams-samuel-lendsqr-be-test.onrender.com/](https://williams-samuel-lendsqr-be-test-lrbk.onrender.com)
+- API docs: [https://williams-samuel-lendsqr-be-test.onrender.com/docs](https://williams-samuel-lendsqr-be-test-lrbk.onrender.com/docs)
+- Health check: [https://williams-samuel-lendsqr-be-test.onrender.com/health](https://williams-samuel-lendsqr-be-test-lrbk.onrender.com/health)
 
 ## Overview
 
